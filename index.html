@@ -350,56 +350,95 @@ button:hover {
 // Add new folders and files here.
 // Text and image files are loaded from the A/ directory.
 
-const FS = {
-    "logs": {
-        type: "dir",
-        children: {
-            "exploration": {
-                type: "dir",
-                children: {}
-            },
-            "analysis": {
-                type: "dir",
-                children: {}
-            },
-            "mission.txt": {
-                type: "locked"
-            }
-        }
-    },
+const FS = {}
 
-    "databases": {
-        type: "dir",
-        children: {
-            "entities": {
-                type: "dir",
-                children: {}
-            },
-            "players": {
-                type: "dir",
-                children: {}
-            },
-            "screenshot": {
-                type: "dir",
-                children: {}
-            }
-        }
+const GITHUB_OWNER = "sunsorb6-hub";
+const GITHUB_REPO = "datarchive";
+const GITHUB_BRANCH = "main";
+
+async function loadArchive() {
+    const status = document.getElementById("connection");
+    status.textContent = "SCANNING...";
+
+    const api =
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/${GITHUB_BRANCH}?recursive=1`;
+
+    const response = await fetch(api);
+
+    if (!response.ok) {
+        throw new Error("GITHUB API ERROR: " + response.status);
     }
-};
 
-/*
-Example: adding files to the archive.
+    const data = await response.json();
 
-"player_01.txt": {
-    type: "file",
-    path: "databases/players/player_01.txt"
+    if (data.truncated) {
+        throw new Error("ARCHIVE TREE IS TOO LARGE.");
+    }
+
+    function createDirectory(parent, name) {
+        if (!parent[name]) {
+            parent[name] = {
+                type: "dir",
+                children: {}
+            };
+        }
+        return parent[name];
+    }
+
+    for (const entry of data.tree) {
+        if (!entry.path.startsWith("A/")) continue;
+
+        const relative = entry.path.slice(2);
+        if (!relative) continue;
+
+        const parts = relative.split("/");
+        const filename = parts.pop();
+
+        let parent = FS;
+
+        for (const folder of parts) {
+            const dir = createDirectory(parent, folder);
+            parent = dir.children;
+        }
+
+        // The mission file remains inaccessible.
+        if (relative.toLowerCase() === "logs/mission.txt") {
+            continue;
+        }
+
+        if (entry.type === "tree") {
+            createDirectory(parent, filename);
+            continue;
+        }
+
+        if (entry.type !== "blob") continue;
+
+        const extension = filename.split(".").pop().toLowerCase();
+
+        const imageExtensions = [
+            "png", "jpg", "jpeg", "gif", "webp"
+        ];
+
+        parent[filename] = {
+            type: imageExtensions.includes(extension)
+                ? "image"
+                : "file",
+            path: relative
+        };
+    }
+
+    // Add the locked entry even if it does not exist on GitHub.
+    const logs = createDirectory(FS, "logs");
+
+    logs.children["mission.txt"] = {
+        type: "locked"
+    };
+
+    status.textContent = "ONLINE";
+
+    return true;
 }
-
-"evidence_01.png": {
-    type: "image",
-    path: "databases/screenshot/evidence_01.png"
-}
-*/
+    
 
 const output = document.getElementById("output");
 const input = document.getElementById("command");
