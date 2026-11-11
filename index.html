@@ -356,35 +356,62 @@ const GITHUB_OWNER = "sunsorb6-hub";
 const GITHUB_REPO = "datarchive";
 const GITHUB_BRANCH = "main";
 
+
 async function loadArchive() {
     const status = document.getElementById("connection");
     status.textContent = "SCANNING...";
 
-    const api =
-        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/${GITHUB_BRANCH}?recursive=1`;
+    const base =
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-    const response = await fetch(api);
+    // Step 1: Retrieve the branch information.
+    const branchResponse = await fetch(
+        `${base}/branches/${GITHUB_BRANCH}`
+    );
 
-    if (!response.ok) {
-        throw new Error("GITHUB API ERROR: " + response.status);
+    if (!branchResponse.ok) {
+        throw new Error(
+            "BRANCH ERROR: HTTP " + branchResponse.status
+        );
     }
 
-    const data = await response.json();
+    const branchData = await branchResponse.json();
+    const treeSHA = branchData.commit.commit.tree.sha;
+
+    // Step 2: Retrieve the complete repository tree.
+    const treeResponse = await fetch(
+        `${base}/git/trees/${treeSHA}?recursive=1`
+    );
+
+    if (!treeResponse.ok) {
+        throw new Error(
+            "TREE ERROR: HTTP " + treeResponse.status
+        );
+    }
+
+    const data = await treeResponse.json();
 
     if (data.truncated) {
         throw new Error("ARCHIVE TREE IS TOO LARGE.");
     }
 
+    // Reset the virtual filesystem.
+    for (const key of Object.keys(FS)) {
+        delete FS[key];
+    }
+
     function createDirectory(parent, name) {
-        if (!parent[name]) {
+        if (!parent[name] || parent[name].type !== "dir") {
             parent[name] = {
                 type: "dir",
                 children: {}
             };
         }
+
         return parent[name];
     }
 
+    // Build the archive from GitHub.
     for (const entry of data.tree) {
         if (!entry.path.startsWith("A/")) continue;
 
@@ -397,11 +424,11 @@ async function loadArchive() {
         let parent = FS;
 
         for (const folder of parts) {
-            const dir = createDirectory(parent, folder);
-            parent = dir.children;
+            const directory = createDirectory(parent, folder);
+            parent = directory.children;
         }
 
-        // The mission file remains inaccessible.
+        // Keep mission.txt inaccessible.
         if (relative.toLowerCase() === "logs/mission.txt") {
             continue;
         }
@@ -427,7 +454,7 @@ async function loadArchive() {
         };
     }
 
-    // Add the locked entry even if it does not exist on GitHub.
+    // Restore the locked mission entry.
     const logs = createDirectory(FS, "logs");
 
     logs.children["mission.txt"] = {
@@ -438,7 +465,7 @@ async function loadArchive() {
 
     return true;
 }
-    
+
 
 const output = document.getElementById("output");
 const input = document.getElementById("command");
