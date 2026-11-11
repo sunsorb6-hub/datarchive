@@ -1,0 +1,908 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataArchive</title>
+
+<style>
+:root {
+    --bg: #ffffff;
+    --fg: #111111;
+    --line: #bdbdbd;
+    --muted: #777777;
+    --selection: #dedede;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+}
+
+button, input {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    background: white;
+    border: 1px solid #888;
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #eeeeee;
+}
+
+#terminal {
+    min-height: 100vh;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--fg);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+    font-weight: bold;
+}
+
+#output {
+    flex: 1;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.55;
+}
+
+.line {
+    margin: 2px 0;
+}
+
+.dim {
+    color: var(--muted);
+}
+
+.error {
+    color: #a00000;
+}
+
+.input-line {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid var(--fg);
+    padding-top: 12px;
+    margin-top: 16px;
+    gap: 8px;
+}
+
+#prompt {
+    white-space: nowrap;
+}
+
+#command {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    min-width: 0;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* FILE MANAGER */
+
+#manager {
+    min-height: 100vh;
+    padding: 18px;
+    background: white;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 12px;
+}
+
+.window {
+    border: 1px solid #777;
+    min-height: calc(100vh - 36px);
+    display: flex;
+    flex-direction: column;
+}
+
+.titlebar {
+    background: #dedede;
+    border-bottom: 1px solid #888;
+    padding: 7px 10px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+.menu {
+    display: flex;
+    gap: 20px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #aaa;
+}
+
+.menu span {
+    cursor: pointer;
+}
+
+.menu span:hover {
+    text-decoration: underline;
+}
+
+.toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    border-bottom: 1px solid #aaa;
+}
+
+.toolbar button {
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 12px;
+}
+
+.address {
+    padding: 9px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #aaa;
+}
+
+#address {
+    flex: 1;
+    padding: 5px;
+    border: 1px solid #aaa;
+    background: white;
+    font-family: "Courier New", monospace;
+}
+
+.file-area {
+    padding: 14px;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    align-content: start;
+    gap: 5px;
+}
+
+.file {
+    padding: 10px;
+    border: 1px solid transparent;
+    cursor: default;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.file:hover {
+    border-color: #aaa;
+}
+
+.file.selected {
+    background: var(--selection);
+    border: 1px solid #888;
+}
+
+.file-name {
+    margin-top: 6px;
+}
+
+.file-kind {
+    color: #777;
+    font-size: 10px;
+}
+
+.statusbar {
+    border-top: 1px solid #aaa;
+    padding: 7px 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#viewer {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid black;
+    padding-bottom: 12px;
+}
+
+#viewer-content {
+    flex: 1;
+    overflow: auto;
+    padding: 20px 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+}
+
+#viewer-content img {
+    display: block;
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 1px solid #aaa;
+    margin: auto;
+}
+
+@media(max-width: 600px) {
+    #terminal {
+        padding: 14px;
+    }
+
+    #manager {
+        padding: 5px;
+    }
+
+    .file-area {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- TERMINAL MODE -->
+
+<div id="terminal">
+
+    <div class="header">
+        <span>DATAARCHIVE SYSTEM</span>
+        <span id="connection">ONLINE</span>
+    </div>
+
+    <div id="output"></div>
+
+    <div class="input-line">
+        <span id="prompt">A:\&gt;</span>
+        <input id="command"
+               type="text"
+               autocomplete="off"
+               spellcheck="false"
+               autofocus>
+    </div>
+
+</div>
+
+<!-- MOUSE MODE -->
+
+<div id="manager" class="hidden">
+    <div class="window">
+
+        <div class="titlebar">
+            <span>DATAARCHIVE - FILE MANAGER</span>
+            <span>DRIVE A:</span>
+        </div>
+
+        <div class="menu">
+            <span onclick="showMenu('File')">File</span>
+            <span onclick="showMenu('View')">View</span>
+            <span onclick="showMenu('Help')">Help</span>
+        </div>
+
+        <div class="toolbar">
+            <button onclick="goBack()">Back</button>
+            <button onclick="goParent()">Up</button>
+            <button onclick="refreshManager()">Refresh</button>
+            <button onclick="switchToTerminal()">Terminal</button>
+        </div>
+
+        <div class="address">
+            <span>Path:</span>
+            <input id="address" readonly value="A:\">
+        </div>
+
+        <div class="file-area" id="file-area"></div>
+
+        <div class="statusbar">
+            <span id="file-count">0 OBJECTS</span>
+            <span>DATAARCHIVE 1.0</span>
+        </div>
+
+    </div>
+</div>
+
+<!-- FILE VIEWER -->
+
+<div id="viewer" class="hidden">
+    <div class="viewer-header">
+        <span id="viewer-title">FILE VIEWER</span>
+        <button onclick="closeViewer()">CLOSE</button>
+    </div>
+    <div id="viewer-content"></div>
+</div>
+
+<script>
+
+/* =====================================
+   DATAARCHIVE VIRTUAL FILE SYSTEM
+===================================== */
+
+// Add new folders and files here.
+// Text and image files are loaded from the A/ directory.
+
+const FS = {
+    "logs": {
+        type: "dir",
+        children: {
+            "exploration": {
+                type: "dir",
+                children: {}
+            },
+            "analysis": {
+                type: "dir",
+                children: {}
+            },
+            "mission.txt": {
+                type: "locked"
+            }
+        }
+    },
+
+    "databases": {
+        type: "dir",
+        children: {
+            "entities": {
+                type: "dir",
+                children: {}
+            },
+            "players": {
+                type: "dir",
+                children: {}
+            },
+            "screenshot": {
+                type: "dir",
+                children: {}
+            }
+        }
+    }
+};
+
+/*
+Example: adding files to the archive.
+
+"player_01.txt": {
+    type: "file",
+    path: "databases/players/player_01.txt"
+}
+
+"evidence_01.png": {
+    type: "image",
+    path: "databases/screenshot/evidence_01.png"
+}
+*/
+
+const output = document.getElementById("output");
+const input = document.getElementById("command");
+const prompt = document.getElementById("prompt");
+
+let currentPath = [];
+let history = [];
+let historyIndex = 0;
+let tabMatches = [];
+let tabIndex = 0;
+let managerHistory = [];
+let selectedFile = null;
+
+/* =====================================
+   GENERAL UTILITIES
+===================================== */
+
+function getDirectory(path = currentPath) {
+    let node = { type: "dir", children: FS };
+
+    for (const part of path) {
+        if (!node.children || !node.children[part]) return null;
+        node = node.children[part];
+    }
+
+    return node;
+}
+
+function getNode(path) {
+    if (path.length === 0) {
+        return { type: "dir", children: FS };
+    }
+
+    const parent = getDirectory(path.slice(0, -1));
+    return parent?.children?.[path[path.length - 1]] || null;
+}
+
+function currentLocation() {
+    return "A:\\" + currentPath.join("\\") +
+           (currentPath.length ? "\\" : "");
+}
+
+function updatePrompt() {
+    prompt.textContent = currentLocation() + ">";
+}
+
+function print(text = "", className = "") {
+    const line = document.createElement("div");
+    line.className = "line " + className;
+    line.textContent = text;
+    output.appendChild(line);
+    output.scrollTop = output.scrollHeight;
+}
+
+function clearOutput() {
+    output.innerHTML = "";
+}
+
+function normalizeName(name) {
+    return name.toLowerCase();
+}
+
+function findChild(name) {
+    const dir = getDirectory();
+    if (!dir) return null;
+
+    const key = Object.keys(dir.children).find(
+        k => normalizeName(k) === normalizeName(name)
+    );
+
+    return key ? { name: key, node: dir.children[key] } : null;
+}
+
+/* =====================================
+   FILE OPENING
+===================================== */
+
+async function openFile(name, node) {
+    if (node.type === "locked") {
+        print("ACCESS DENIED.", "error");
+        print("INSUFFICIENT PERMISSIONS.", "error");
+        return;
+    }
+
+    if (node.type === "dir") {
+        currentPath.push(name);
+        updatePrompt();
+        print(currentLocation());
+        return;
+    }
+
+    const path = "A/" + node.path;
+
+    try {
+        const response = await fetch(path);
+
+        if (!response.ok) {
+            throw new Error("FILE NOT FOUND");
+        }
+
+        if (node.type === "image") {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            showImage(name, url);
+        } else {
+            const text = await response.text();
+            showText(name, text);
+        }
+
+    } catch (error) {
+        print("ERROR: UNABLE TO READ FILE.", "error");
+        print(path, "dim");
+    }
+}
+
+function showText(name, text) {
+    document.getElementById("viewer-title").textContent =
+        "FILE: " + name;
+
+    const content = document.getElementById("viewer-content");
+    content.replaceChildren();
+
+    const pre = document.createElement("pre");
+    pre.style.margin = "0";
+    pre.style.fontFamily = "Courier New, monospace";
+    pre.textContent = text;
+
+    content.appendChild(pre);
+    document.getElementById("viewer").classList.remove("hidden");
+}
+
+function showImage(name, url) {
+    document.getElementById("viewer-title").textContent =
+        "IMAGE: " + name;
+
+    const content = document.getElementById("viewer-content");
+    content.replaceChildren();
+
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = name;
+
+    img.onload = () => {
+        img.title = img.naturalWidth + " x " + img.naturalHeight;
+    };
+
+    content.appendChild(img);
+    document.getElementById("viewer").classList.remove("hidden");
+
+    img.addEventListener("error", () => {
+        print("ERROR: IMAGE COULD NOT BE DISPLAYED.", "error");
+        closeViewer();
+    });
+}
+
+function closeViewer() {
+    const content = document.getElementById("viewer-content");
+    const img = content.querySelector("img");
+
+    if (img && img.src.startsWith("blob:")) {
+        URL.revokeObjectURL(img.src);
+    }
+
+    document.getElementById("viewer").classList.add("hidden");
+}
+
+/* =====================================
+   TERMINAL COMMANDS
+===================================== */
+
+function execute(raw) {
+    const command = raw.trim();
+
+    if (!command) return;
+
+    print(currentLocation() + "> " + command, "dim");
+
+    const lower = command.toLowerCase();
+
+    if (lower === "help") {
+        print("AVAILABLE COMMANDS:");
+        print("DIR       - LIST DIRECTORY CONTENTS");
+        print("CD ..     - GO TO PARENT DIRECTORY");
+        print("DRIVE     - DISPLAY AVAILABLE DRIVES");
+        print("CLS       - CLEAR TERMINAL");
+        print("MOUSE     - OPEN FILE MANAGER");
+        print("TERMINAL  - RETURN TO TERMINAL");
+        print("HELP      - DISPLAY THIS MESSAGE");
+        print("");
+        print("TYPE A FILE OR DIRECTORY NAME TO OPEN IT.");
+        return;
+    }
+
+    if (lower === "cls" || lower === "clear") {
+        clearOutput();
+        return;
+    }
+
+    if (lower === "drive") {
+        print("AVAILABLE DRIVES:");
+        print("A:\\  DATAARCHIVE STORAGE");
+        return;
+    }
+
+    if (lower === "dir" || lower === "ls") {
+        const dir = getDirectory();
+
+        if (!dir) return;
+
+        print("DIRECTORY OF " + currentLocation());
+        print("");
+
+        for (const [name, node] of Object.entries(dir.children)) {
+            print((node.type === "dir" ? "<DIR> " : "      ") + name);
+        }
+
+        print("");
+        print(Object.keys(dir.children).length + " OBJECT(S)");
+        return;
+    }
+
+    if (lower === "cd .." || lower === "..") {
+        if (currentPath.length) currentPath.pop();
+        updatePrompt();
+        return;
+    }
+
+    if (lower === "cd") {
+        print("USAGE: CD [DIRECTORY]", "error");
+        return;
+    }
+
+    if (lower === "mouse") {
+        switchToManager();
+        return;
+    }
+
+    if (lower === "terminal") {
+        switchToTerminal();
+        return;
+    }
+
+    // Support paths such as databases/players
+    const parts = command.replaceAll("/", "\\").split("\\").filter(Boolean);
+    let node = null;
+    let path = [...currentPath];
+
+    if (parts[0]?.toLowerCase() === "a:") {
+        path = [];
+        parts.shift();
+    }
+
+    let failed = false;
+
+    for (const part of parts) {
+        if (part === "..") {
+            path.pop();
+            continue;
+        }
+
+        const parent = getDirectory(path);
+        if (!parent) {
+            failed = true;
+            break;
+        }
+
+        const key = Object.keys(parent.children).find(
+            k => k.toLowerCase() === part.toLowerCase()
+        );
+
+        if (!key) {
+            failed = true;
+            break;
+        }
+
+        node = parent.children[key];
+        path.push(key);
+    }
+
+    if (failed || !node) {
+        print("COMMAND OR FILE NOT FOUND.", "error");
+        return;
+    }
+
+    const name = path[path.length - 1];
+
+    if (node.type === "dir") {
+        currentPath = path;
+        updatePrompt();
+        print("DIRECTORY OPENED.");
+        return;
+    }
+
+    openFile(name, node);
+}
+
+/* =====================================
+   INPUT & HISTORY
+===================================== */
+
+input.addEventListener("keydown", event => {
+
+    if (event.key === "Enter") {
+        const value = input.value;
+        input.value = "";
+
+        if (value.trim()) {
+            history.push(value);
+            historyIndex = history.length;
+        }
+
+        tabMatches = [];
+        execute(value);
+        return;
+    }
+
+    if (event.key === "ArrowUp") {
+        event.preventDefault();
+
+        if (historyIndex > 0) {
+            historyIndex--;
+            input.value = history[historyIndex];
+        }
+        return;
+    }
+
+    if (event.key === "ArrowDown") {
+        event.preventDefault();
+
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+            input.value = history[historyIndex];
+        } else {
+            historyIndex = history.length;
+            input.value = "";
+        }
+        return;
+    }
+
+    if (event.key === "Tab") {
+        event.preventDefault();
+        autocomplete();
+    }
+
+    if (event.key === "Escape") {
+        input.value = "";
+    }
+});
+
+/* =====================================
+   TAB AUTOCOMPLETION
+===================================== */
+
+function autocomplete() {
+    const value = input.value;
+    const prefix = value.toLowerCase();
+
+    if (!tabMatches.length || tabIndex === 0) {
+        const dir = getDirectory();
+        tabMatches = Object.keys(dir.children).filter(
+            name => name.toLowerCase().startsWith(prefix)
+        );
+        tabIndex = 0;
+    }
+
+    if (!tabMatches.length) {
+        print("NO MATCHING FILES.", "dim");
+        return;
+    }
+
+    if (tabMatches.length === 1) {
+        input.value = tabMatches[0];
+        tabMatches = [];
+        tabIndex = 0;
+        return;
+    }
+
+    input.value = tabMatches[tabIndex % tabMatches.length];
+    tabIndex++;
+
+    if (tabIndex >= tabMatches.length) {
+        print("MATCHES: " + tabMatches.join("  "));
+        tabIndex = 0;
+    }
+}
+
+input.addEventListener("input", () => {
+    tabMatches = [];
+    tabIndex = 0;
+});
+
+/* =====================================
+   FILE MANAGER
+===================================== */
+
+function switchToManager() {
+    document.getElementById("terminal").classList.add("hidden");
+    document.getElementById("manager").classList.remove("hidden");
+    refreshManager();
+}
+
+function switchToTerminal() {
+    document.getElementById("manager").classList.add("hidden");
+    document.getElementById("terminal").classList.remove("hidden");
+    input.focus();
+}
+
+function refreshManager() {
+    const dir = getDirectory();
+    if (!dir) return;
+
+    const area = document.getElementById("file-area");
+    area.innerHTML = "";
+
+    document.getElementById("address").value = currentLocation();
+
+    for (const [name, node] of Object.entries(dir.children)) {
+        const item = document.createElement("div");
+        item.className = "file";
+
+        const kind = node.type === "dir" ? "[DIRECTORY]" :
+                     node.type === "locked" ? "[LOCKED]" :
+                     node.type === "image" ? "[IMAGE]" : "[TEXT FILE]";
+
+        const label = document.createElement("div");
+        label.textContent = kind;
+
+        const filename = document.createElement("div");
+        filename.className = "file-name";
+        filename.textContent = name;
+
+        const type = document.createElement("div");
+        type.className = "file-kind";
+        type.textContent = node.type.toUpperCase();
+
+        item.append(label, filename, type);
+
+        item.addEventListener("click", () => {
+            document.querySelectorAll(".file").forEach(f =>
+                f.classList.remove("selected")
+            );
+
+            item.classList.add("selected");
+            selectedFile = name;
+        });
+
+        item.addEventListener("dblclick", () => {
+            openFile(name, node).then(refreshManager);
+        });
+
+        area.appendChild(item);
+    }
+
+    document.getElementById("file-count").textContent =
+        Object.keys(dir.children).length + " OBJECTS";
+}
+
+function goParent() {
+    if (currentPath.length) {
+        managerHistory.push([...currentPath]);
+        currentPath.pop();
+        refreshManager();
+    }
+}
+
+function goBack() {
+    if (managerHistory.length) {
+        currentPath = managerHistory.pop();
+        refreshManager();
+    } else {
+        goParent();
+    }
+}
+
+function showMenu(menu) {
+    if (menu === "Help") {
+        alert("DATAARCHIVE FILE MANAGER\nVERSION 1.0");
+    } else if (menu === "View") {
+        refreshManager();
+    } else if (menu === "File") {
+        if (selectedFile) {
+            const found = findChild(selectedFile);
+            if (found) openFile(found.name, found.node);
+        }
+    }
+}
+
+/* =====================================
+   STARTUP
+===================================== */
+
+print("DATAARCHIVE SYSTEM");
+print("VERSION 1.0");
+print("");
+print("ARCHIVE STORAGE: ONLINE");
+print("DRIVE A: READY");
+print("");
+print("TYPE 'HELP' TO BEGIN.");
+print("");
+
+updatePrompt();
+
+</script>
+</body>
+  </html>
+  
