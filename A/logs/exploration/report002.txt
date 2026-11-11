@@ -1,0 +1,5 @@
+Exploration Log n°2
+
+The employee 572 test subject have apparently discovered a sign saying "This is your last chance." on a flying bedrock block. It is therefore possible that only one entity placed the bedrock block, because normally the code does not allow the player in survival mode to place this block unless creative mode is activated.
+Employee 572 test subject have then seen player [UNKNOW UUID] with the name of XxDarkBuilderxX. According to the report, this player is currently being evaluated by other employees and is awaiting the order to collect the data.
+572 also reported to have seen a tree at the top of a glitched chunk.
