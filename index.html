@@ -930,14 +930,34 @@ function showMenu(menu) {
    STARTUP
 ===================================== */
 
-print("DATAARCHIVE SYSTEM");
-print("VERSION 1.0");
-print("");
-print("ARCHIVE STORAGE: ONLINE");
-print("DRIVE A: READY");
-print("");
-print("TYPE 'HELP' TO BEGIN.");
-print("");
+
+async function startup() {
+    print("DATAARCHIVE SYSTEM");
+    print("VERSION 1.0");
+    print("");
+    print("CONNECTING TO ARCHIVE...");
+    print("");
+
+    updatePrompt();
+
+    try {
+        await loadArchive();
+
+        print("ARCHIVE STORAGE: ONLINE");
+        print("DRIVE A: READY");
+        print("");
+        print("ARCHIVE INDEX LOADED.");
+        print("TYPE 'HELP' TO BEGIN.");
+    } catch (error) {
+        document.getElementById("connection").textContent = "ERROR";
+
+        print("ARCHIVE CONNECTION FAILED.", "error");
+        print(error.message, "error");
+        print("CHECK GITHUB CONNECTION AND TRY AGAIN.");
+    }
+}
+
+startup();
 
 updatePrompt();
 
