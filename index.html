@@ -266,6 +266,99 @@ button:hover {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* MOBILE & TEXT OVERFLOW FIX */
+
+html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+#terminal,
+#manager,
+.window {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+#output,
+.file-area,
+.file,
+.file-name,
+.file-kind,
+.titlebar,
+.menu,
+.statusbar,
+.address {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.file-area {
+    grid-template-columns:
+        repeat(auto-fit, minmax(min(145px, 100%), 1fr));
+}
+
+.file {
+    white-space: normal;
+}
+
+.file-name {
+    line-height: 1.4;
+}
+
+.titlebar,
+.statusbar {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.menu {
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
+
+.address {
+    flex-wrap: wrap;
+}
+
+#address {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.toolbar {
+    flex-wrap: wrap;
+}
+
+#viewer-content,
+#viewer-content pre {
+    max-width: 100%;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+@media (max-width: 400px) {
+    .file-area {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #manager {
+        padding: 3px;
+    }
+
+    .window {
+        min-height: calc(100vh - 6px);
+    }
+}
+    
 </style>
 </head>
 
