@@ -13,18 +13,28 @@
     --line: #bdbdbd;
     --muted: #777777;
     --selection: #dedede;
+    --panel: #f2f2f2;
+    --accent: #111111;
 }
 
 * {
     box-sizing: border-box;
 }
 
-body {
+html, body {
     margin: 0;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+body {
     background: var(--bg);
     color: var(--fg);
     font-family: "Courier New", monospace;
     font-size: 14px;
+    transition: background .15s, color .15s;
 }
 
 button, input {
@@ -33,18 +43,145 @@ button, input {
 }
 
 button {
-    background: white;
-    border: 1px solid #888;
-    padding: 5px 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
     cursor: pointer;
 }
 
 button:hover {
-    background: #eeeeee;
+    background: var(--selection);
 }
+
+input {
+    background: var(--bg);
+    color: var(--fg);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ================================
+   THEMES
+================================ */
+
+body.theme-dark {
+    --bg: #101010;
+    --fg: #eeeeee;
+    --line: #555555;
+    --muted: #aaaaaa;
+    --selection: #303030;
+    --panel: #1c1c1c;
+    --accent: #eeeeee;
+}
+
+/* RETRO CRT */
+
+body.ui-retro {
+    --bg: #030803;
+    --fg: #8cff8c;
+    --line: #286428;
+    --muted: #559955;
+    --selection: #173817;
+    --panel: #071207;
+    --accent: #8cff8c;
+
+    font-family: "Courier New", monospace;
+}
+
+body.ui-retro button {
+    background: #071207;
+    color: #8cff8c;
+    border-color: #286428;
+}
+
+body.ui-retro button:hover {
+    background: #173817;
+}
+
+body.ui-retro input {
+    background: #030803;
+    color: #8cff8c;
+}
+
+body.ui-retro #terminal,
+body.ui-retro #manager,
+body.ui-retro #viewer {
+    text-shadow: 0 0 4px rgba(100,255,100,.35);
+}
+
+body.ui-retro #terminal::after {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,.12) 4px
+    );
+}
+
+/* ARCHIVE UI */
+
+body.ui-archive {
+    --bg: #e7e7e7;
+    --fg: #151515;
+    --line: #888888;
+    --muted: #555555;
+    --selection: #c9d4df;
+    --panel: #d5d5d5;
+    --accent: #222222;
+
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+body.ui-archive.theme-dark {
+    --bg: #202020;
+    --fg: #eeeeee;
+    --line: #666666;
+    --muted: #aaaaaa;
+    --selection: #39434c;
+    --panel: #303030;
+}
+
+body.ui-archive #terminal {
+    margin: 12px;
+    min-height: calc(100vh - 24px);
+    border: 2px solid var(--line);
+    background: var(--bg);
+}
+
+body.ui-archive .header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--line);
+    padding: 12px;
+}
+
+body.ui-archive .input-line {
+    background: var(--panel);
+    padding: 12px;
+}
+
+body.ui-archive #output {
+    padding: 12px;
+    font-family: "Courier New", monospace;
+}
+
+body.ui-archive #manager {
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+/* ================================
+   TERMINAL
+================================ */
 
 #terminal {
     min-height: 100vh;
+    width: 100%;
     padding: 24px;
     display: flex;
     flex-direction: column;
@@ -53,6 +190,8 @@ button:hover {
 .header {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     border-bottom: 1px solid var(--fg);
     padding-bottom: 12px;
     margin-bottom: 24px;
@@ -62,13 +201,17 @@ button:hover {
 #output {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+    word-break: break-word;
     line-height: 1.55;
+    min-width: 0;
 }
 
 .line {
     margin: 2px 0;
+    overflow-wrap: anywhere;
 }
 
 .dim {
@@ -76,7 +219,11 @@ button:hover {
 }
 
 .error {
-    color: #a00000;
+    color: #b00000;
+}
+
+body.ui-retro .error {
+    color: #ff6666;
 }
 
 .input-line {
@@ -86,6 +233,7 @@ button:hover {
     padding-top: 12px;
     margin-top: 16px;
     gap: 8px;
+    min-width: 0;
 }
 
 #prompt {
@@ -100,41 +248,44 @@ button:hover {
     min-width: 0;
 }
 
-.hidden {
-    display: none !important;
-}
-
-/* FILE MANAGER */
+/* ================================
+   FILE MANAGER
+================================ */
 
 #manager {
     min-height: 100vh;
+    width: 100%;
     padding: 18px;
-    background: white;
+    background: var(--bg);
     font-family: Tahoma, Arial, sans-serif;
     font-size: 12px;
 }
 
 .window {
-    border: 1px solid #777;
+    border: 1px solid var(--line);
     min-height: calc(100vh - 36px);
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .titlebar {
-    background: #dedede;
-    border-bottom: 1px solid #888;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
     padding: 7px 10px;
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
     font-weight: bold;
 }
 
 .menu {
     display: flex;
+    flex-wrap: wrap;
     gap: 20px;
     padding: 8px 12px;
-    border-bottom: 1px solid #aaa;
+    border-bottom: 1px solid var(--line);
 }
 
 .menu span {
@@ -147,9 +298,10 @@ button:hover {
 
 .toolbar {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     padding: 8px;
-    border-bottom: 1px solid #aaa;
+    border-bottom: 1px solid var(--line);
 }
 
 .toolbar button {
@@ -161,15 +313,18 @@ button:hover {
     padding: 9px;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
-    border-bottom: 1px solid #aaa;
+    border-bottom: 1px solid var(--line);
 }
 
 #address {
     flex: 1;
+    width: 100%;
+    min-width: 0;
     padding: 5px;
-    border: 1px solid #aaa;
-    background: white;
+    border: 1px solid var(--line);
+    background: var(--bg);
     font-family: "Courier New", monospace;
 }
 
@@ -177,9 +332,10 @@ button:hover {
     padding: 14px;
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr));
     align-content: start;
     gap: 5px;
+    min-width: 0;
 }
 
 .file {
@@ -188,58 +344,80 @@ button:hover {
     cursor: default;
     min-width: 0;
     overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .file:hover {
-    border-color: #aaa;
+    border-color: var(--line);
 }
 
 .file.selected {
     background: var(--selection);
-    border: 1px solid #888;
+    border: 1px solid var(--line);
 }
 
 .file-name {
     margin-top: 6px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 .file-kind {
-    color: #777;
+    color: var(--muted);
     font-size: 10px;
 }
 
 .statusbar {
-    border-top: 1px solid #aaa;
+    border-top: 1px solid var(--line);
     padding: 7px 10px;
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
 }
+
+/* ================================
+   VIEWER
+================================ */
 
 #viewer {
     position: fixed;
     inset: 0;
-    background: white;
-    z-index: 10;
+    background: var(--bg);
+    color: var(--fg);
+    z-index: 40;
     display: flex;
     flex-direction: column;
     padding: 20px;
+    min-width: 0;
 }
 
 .viewer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid black;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid var(--fg);
     padding-bottom: 12px;
 }
 
 #viewer-content {
     flex: 1;
     overflow: auto;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     padding: 20px 0;
     white-space: pre-wrap;
-    overflow-wrap: anywhere;
     line-height: 1.6;
+    min-width: 0;
+}
+
+#viewer-content pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 #viewer-content img {
@@ -249,8 +427,121 @@ button:hover {
     object-fit: contain;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
-    border: 1px solid #aaa;
+    border: 1px solid var(--line);
     margin: auto;
+}
+
+.media-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    padding: 20px 0;
+}
+
+.media-player audio {
+    width: min(100%, 600px);
+}
+
+.media-player video {
+    width: min(100%, 900px);
+    max-height: 70vh;
+    background: black;
+    border: 1px solid var(--line);
+}
+
+.media-label {
+    font-weight: bold;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+/* ================================
+   SETUP WINDOW
+================================ */
+
+#setup {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0,0,0,.55);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+}
+
+.setup-window {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    width: min(100%, 520px);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,.3);
+}
+
+.setup-title {
+    padding: 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.setup-section {
+    padding: 15px;
+    border-bottom: 1px solid var(--line);
+}
+
+.setup-section h3 {
+    margin: 0 0 12px;
+    font-size: 13px;
+}
+
+.setup-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.setup-options.ui-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.setup-option {
+    border: 1px solid var(--line);
+    padding: 12px 5px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--fg);
+    min-width: 0;
+}
+
+.setup-option.active {
+    background: var(--selection);
+    border: 2px solid var(--fg);
+}
+
+.setup-option strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.setup-option small {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.setup-footer {
+    padding: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 @media(max-width: 600px) {
@@ -265,112 +556,33 @@ button:hover {
     .file-area {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    #viewer {
+        padding: 12px;
+    }
 }
 
-/* MOBILE & TEXT OVERFLOW FIX */
-
-html, body {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-#terminal,
-#manager,
-.window {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-}
-
-#output,
-.file-area,
-.file,
-.file-name,
-.file-kind,
-.titlebar,
-.menu,
-.statusbar,
-.address {
-    min-width: 0;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.file-area {
-    grid-template-columns:
-        repeat(auto-fit, minmax(min(145px, 100%), 1fr));
-}
-
-.file {
-    white-space: normal;
-}
-
-.file-name {
-    line-height: 1.4;
-}
-
-.titlebar,
-.statusbar {
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.menu {
-    flex-wrap: wrap;
-    row-gap: 8px;
-}
-
-.address {
-    flex-wrap: wrap;
-}
-
-#address {
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.toolbar {
-    flex-wrap: wrap;
-}
-
-#viewer-content,
-#viewer-content pre {
-    max-width: 100%;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-@media (max-width: 400px) {
+@media(max-width: 400px) {
     .file-area {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    #manager {
-        padding: 3px;
-    }
-
-    .window {
-        min-height: calc(100vh - 6px);
+    .setup-options.ui-options {
+        grid-template-columns: 1fr;
     }
 }
-    
 </style>
 </head>
 
-<body>
+<body class="theme-light ui-classic">
 
-<!-- TERMINAL MODE -->
+<!-- TERMINAL -->
 
 <div id="terminal">
 
     <div class="header">
         <span>DATAARCHIVE SYSTEM</span>
-        <span id="connection">ONLINE</span>
+        <span id="connection">CONNECTING</span>
     </div>
 
     <div id="output"></div>
@@ -386,7 +598,7 @@ html, body {
 
 </div>
 
-<!-- MOUSE MODE -->
+<!-- FILE MANAGER -->
 
 <div id="manager" class="hidden">
     <div class="window">
@@ -418,7 +630,7 @@ html, body {
 
         <div class="statusbar">
             <span id="file-count">0 OBJECTS</span>
-            <span>DATAARCHIVE 1.0</span>
+            <span>DATAARCHIVE 1.2</span>
         </div>
 
     </div>
@@ -431,24 +643,197 @@ html, body {
         <span id="viewer-title">FILE VIEWER</span>
         <button onclick="closeViewer()">CLOSE</button>
     </div>
+
     <div id="viewer-content"></div>
+</div>
+
+<!-- SETUP -->
+
+<div id="setup" class="hidden">
+    <div class="setup-window">
+
+        <div class="setup-title">
+            <span>DATAARCHIVE SETUP</span>
+            <span>VERSION 1.2</span>
+        </div>
+
+        <div class="setup-section">
+            <h3>DISPLAY THEME</h3>
+
+            <div class="setup-options">
+                <button class="setup-option"
+                        id="theme-light"
+                        onclick="setTheme('light')">
+                    <strong>LIGHT</strong>
+                    <small>White / Black</small>
+                </button>
+
+                <button class="setup-option"
+                        id="theme-dark"
+                        onclick="setTheme('dark')">
+                    <strong>DARK</strong>
+                    <small>Black / White</small>
+                </button>
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <h3>USER INTERFACE</h3>
+
+            <div class="setup-options ui-options">
+
+                <button class="setup-option"
+                        id="ui-classic"
+                        onclick="setUI('classic')">
+                    <strong>CLASSIC</strong>
+                    <small>Minimal</small>
+                </button>
+
+                <button class="setup-option"
+                        id="ui-retro"
+                        onclick="setUI('retro')">
+                    <strong>RETRO CRT</strong>
+                    <small>Green phosphor</small>
+                </button>
+
+                <button class="setup-option"
+                        id="ui-archive"
+                        onclick="setUI('archive')">
+                    <strong>ARCHIVE</strong>
+                    <small>Classic system</small>
+                </button>
+
+            </div>
+        </div>
+
+        <div class="setup-footer">
+            <button onclick="closeSetup()">CLOSE</button>
+        </div>
+
+    </div>
 </div>
 
 <script>
 
 /* =====================================
-   DATAARCHIVE VIRTUAL FILE SYSTEM
+   GITHUB CONFIGURATION
 ===================================== */
-
-// Add new folders and files here.
-// Text and image files are loaded from the A/ directory.
-
-const FS = {}
 
 const GITHUB_OWNER = "sunsorb6-hub";
 const GITHUB_REPO = "datarchive";
 const GITHUB_BRANCH = "main";
 
+/* =====================================
+   VIRTUAL FILE SYSTEM
+===================================== */
+
+const FS = {};
+
+const output = document.getElementById("output");
+const input = document.getElementById("command");
+const prompt = document.getElementById("prompt");
+
+let currentPath = [];
+let history = [];
+let historyIndex = 0;
+let tabMatches = [];
+let tabIndex = 0;
+let managerHistory = [];
+let selectedFile = null;
+
+/* =====================================
+   SETTINGS
+===================================== */
+
+function loadSettings() {
+    let theme = "light";
+    let ui = "classic";
+
+    try {
+        theme = localStorage.getItem("da_theme") || "light";
+        ui = localStorage.getItem("da_ui") || "classic";
+    } catch (error) {}
+
+    if (!["light", "dark"].includes(theme)) theme = "light";
+    if (!["classic", "retro", "archive"].includes(ui)) ui = "classic";
+
+    document.body.classList.remove("theme-light", "theme-dark");
+    document.body.classList.remove("ui-classic", "ui-retro", "ui-archive");
+
+    document.body.classList.add("theme-" + theme);
+    document.body.classList.add("ui-" + ui);
+
+    updateSetupSelection();
+}
+
+function saveSetting(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (error) {
+        print("WARNING: SETTINGS COULD NOT BE SAVED.", "error");
+    }
+}
+
+function setTheme(theme) {
+    if (!["light", "dark"].includes(theme)) return;
+
+    document.body.classList.remove("theme-light", "theme-dark");
+    document.body.classList.add("theme-" + theme);
+
+    saveSetting("da_theme", theme);
+    updateSetupSelection();
+}
+
+function setUI(ui) {
+    if (!["classic", "retro", "archive"].includes(ui)) return;
+
+    document.body.classList.remove(
+        "ui-classic",
+        "ui-retro",
+        "ui-archive"
+    );
+
+    document.body.classList.add("ui-" + ui);
+
+    saveSetting("da_ui", ui);
+    updateSetupSelection();
+}
+
+function updateSetupSelection() {
+    const theme = document.body.classList.contains("theme-dark")
+        ? "dark" : "light";
+
+    const ui = ["classic", "retro", "archive"].find(
+        name => document.body.classList.contains("ui-" + name)
+    ) || "classic";
+
+    document.getElementById("theme-light").classList.toggle(
+        "active", theme === "light"
+    );
+
+    document.getElementById("theme-dark").classList.toggle(
+        "active", theme === "dark"
+    );
+
+    ["classic", "retro", "archive"].forEach(name => {
+        document.getElementById("ui-" + name).classList.toggle(
+            "active", ui === name
+        );
+    });
+}
+
+function openSetup() {
+    document.getElementById("setup").classList.remove("hidden");
+    updateSetupSelection();
+}
+
+function closeSetup() {
+    document.getElementById("setup").classList.add("hidden");
+}
+
+/* =====================================
+   GITHUB ARCHIVE SCANNER
+===================================== */
 
 async function loadArchive() {
     const status = document.getElementById("connection");
@@ -457,29 +842,23 @@ async function loadArchive() {
     const base =
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-    // Step 1: Retrieve the branch information.
     const branchResponse = await fetch(
         `${base}/branches/${GITHUB_BRANCH}`
     );
 
     if (!branchResponse.ok) {
-        throw new Error(
-            "BRANCH ERROR: HTTP " + branchResponse.status
-        );
+        throw new Error("BRANCH ERROR: HTTP " + branchResponse.status);
     }
 
     const branchData = await branchResponse.json();
     const treeSHA = branchData.commit.commit.tree.sha;
 
-    // Step 2: Retrieve the complete repository tree.
     const treeResponse = await fetch(
         `${base}/git/trees/${treeSHA}?recursive=1`
     );
 
     if (!treeResponse.ok) {
-        throw new Error(
-            "TREE ERROR: HTTP " + treeResponse.status
-        );
+        throw new Error("TREE ERROR: HTTP " + treeResponse.status);
     }
 
     const data = await treeResponse.json();
@@ -488,7 +867,6 @@ async function loadArchive() {
         throw new Error("ARCHIVE TREE IS TOO LARGE.");
     }
 
-    // Reset the virtual filesystem.
     for (const key of Object.keys(FS)) {
         delete FS[key];
     }
@@ -504,7 +882,6 @@ async function loadArchive() {
         return parent[name];
     }
 
-    // Build the archive from GitHub.
     for (const entry of data.tree) {
         if (!entry.path.startsWith("A/")) continue;
 
@@ -521,7 +898,6 @@ async function loadArchive() {
             parent = directory.children;
         }
 
-        // Keep mission.txt inaccessible.
         if (relative.toLowerCase() === "logs/mission.txt") {
             continue;
         }
@@ -539,15 +915,71 @@ async function loadArchive() {
             "png", "jpg", "jpeg", "gif", "webp"
         ];
 
+        const audioExtensions = [
+            "mp3", "wav"
+        ];
+
+        const videoExtensions = [
+            "mp4"
+        ];
+
+        let type = "file";
+
+        if (imageExtensions.includes(extension)) {
+            type = "image";
+        } else if (audioExtensions.includes(extension)) {
+            type = "audio";
+        } else if (videoExtensions.includes(extension)) {
+            type = "video";
+        }
+
         parent[filename] = {
-            type: imageExtensions.includes(extension)
-                ? "image"
-                : "file",
+            type: type,
             path: relative
         };
     }
 
-    // Restore the locked mission entry.
+    // Preserve the locked mission entry.
+    const logs = createDirectory(FS, "logs");
+
+    logs.children["mission.txt"] = {
+        type: "locked"
+    };
+
+    status.textContent = "ONLINE";
+
+    return true;
+}
+
+/* =====================================
+   PATH UTILITIES
+===================================== */
+
+function getDirectory(path = currentPath) {
+    let node = {
+        type: "dir",
+        children: FS
+    };
+
+    for (const part of path) {
+        if (!node.children || !node.children[part]) return null;
+        node = node.children[part];
+    }
+
+    return node;
+}
+
+function getNode(path) {
+    if (path.length === 0) {
+        return { type: "dir", children: FS };
+    }
+
+    const parent = getDirectory(path.slice(0, -1));
+
+    return parent?.children?.[path[path.length - 1]] || null;
+}
+
+function currentLocation()  entry.
     const logs = createDirectory(FS, "logs");
 
     logs.children["mission.txt"] = {
