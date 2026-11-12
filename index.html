@@ -979,54 +979,10 @@ function getNode(path) {
     return parent?.children?.[path[path.length - 1]] || null;
 }
 
-function currentLocation()  entry.
-    const logs = createDirectory(FS, "logs");
-
-    logs.children["mission.txt"] = {
-        type: "locked"
-    };
-
-    status.textContent = "ONLINE";
-
-    return true;
-}
-
-
-const output = document.getElementById("output");
-const input = document.getElementById("command");
-const prompt = document.getElementById("prompt");
-
-let currentPath = [];
-let history = [];
-let historyIndex = 0;
-let tabMatches = [];
-let tabIndex = 0;
-let managerHistory = [];
-let selectedFile = null;
 
 /* =====================================
    GENERAL UTILITIES
 ===================================== */
-
-function getDirectory(path = currentPath) {
-    let node = { type: "dir", children: FS };
-
-    for (const part of path) {
-        if (!node.children || !node.children[part]) return null;
-        node = node.children[part];
-    }
-
-    return node;
-}
-
-function getNode(path) {
-    if (path.length === 0) {
-        return { type: "dir", children: FS };
-    }
-
-    const parent = getDirectory(path.slice(0, -1));
-    return parent?.children?.[path[path.length - 1]] || null;
-}
 
 function currentLocation() {
     return "A:\\" + currentPath.join("\\") +
@@ -1049,8 +1005,24 @@ function clearOutput() {
     output.innerHTML = "";
 }
 
-function normalizeName(name) {
-    return name.toLowerCase();
+function getDirectory(path = currentPath) {
+    let node = { type: "dir", children: FS };
+
+    for (const part of path) {
+        if (!node.children || !node.children[part]) return null;
+        node = node.children[part];
+    }
+
+    return node;
+}
+
+function getNode(path) {
+    if (path.length === 0) {
+        return { type: "dir", children: FS };
+    }
+
+    const parent = getDirectory(path.slice(0, -1));
+    return parent?.children?.[path[path.length - 1]] || null;
 }
 
 function findChild(name) {
@@ -1058,7 +1030,7 @@ function findChild(name) {
     if (!dir) return null;
 
     const key = Object.keys(dir.children).find(
-        k => normalizeName(k) === normalizeName(name)
+        k => k.toLowerCase() === name.toLowerCase()
     );
 
     return key ? { name: key, node: dir.children[key] } : null;
@@ -1067,6 +1039,8 @@ function findChild(name) {
 /* =====================================
    FILE OPENING
 ===================================== */
+
+let activeObjectURL = null;
 
 async function openFile(name, node) {
     if (node.type === "locked") {
@@ -1088,13 +1062,30 @@ async function openFile(name, node) {
         const response = await fetch(path);
 
         if (!response.ok) {
-            throw new Error("FILE NOT FOUND");
+            throw new Error("HTTP " + response.status);
         }
 
-        if (node.type === "image") {
+        if (node.type === "image" ||
+            node.type === "audio" ||
+            node.type === "video") {
+
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
-            showImage(name, url);
+
+            if (activeObjectURL) {
+                URL.revokeObjectURL(activeObjectURL);
+            }
+
+            activeObjectURL = url;
+
+            if (node.type === "image") {
+                showImage(name, url);
+            } else if (node.type === "audio") {
+                showAudio(name, url);
+            } else {
+                showVideo(name, url);
+            }
+
         } else {
             const text = await response.text();
             showText(name, text);
@@ -1102,16 +1093,23 @@ async function openFile(name, node) {
 
     } catch (error) {
         print("ERROR: UNABLE TO READ FILE.", "error");
-        print(path, "dim");
+        print(error.message, "dim");
     }
 }
 
-function showText(name, text) {
-    document.getElementById("viewer-title").textContent =
-        "FILE: " + name;
+function prepareViewer(title) {
+    document.getElementById("viewer-title").textContent = title;
 
     const content = document.getElementById("viewer-content");
     content.replaceChildren();
+
+    document.getElementById("viewer").classList.remove("hidden");
+
+    return content;
+}
+
+function showText(name, text) {
+    const content = prepareViewer("FILE: " + name);
 
     const pre = document.createElement("pre");
     pre.style.margin = "0";
@@ -1119,26 +1117,16 @@ function showText(name, text) {
     pre.textContent = text;
 
     content.appendChild(pre);
-    document.getElementById("viewer").classList.remove("hidden");
 }
 
 function showImage(name, url) {
-    document.getElementById("viewer-title").textContent =
-        "IMAGE: " + name;
-
-    const content = document.getElementById("viewer-content");
-    content.replaceChildren();
+    const content = prepareViewer("IMAGE: " + name);
 
     const img = document.createElement("img");
     img.src = url;
     img.alt = name;
 
-    img.onload = () => {
-        img.title = img.naturalWidth + " x " + img.naturalHeight;
-    };
-
     content.appendChild(img);
-    document.getElementById("viewer").classList.remove("hidden");
 
     img.addEventListener("error", () => {
         print("ERROR: IMAGE COULD NOT BE DISPLAYED.", "error");
@@ -1146,14 +1134,60 @@ function showImage(name, url) {
     });
 }
 
+function showAudio(name, url) {
+    const content = prepareViewer("AUDIO: " + name);
+
+    const player = document.createElement("div");
+    player.className = "media-player";
+
+    const label = document.createElement("div");
+    label.className = "media-label";
+    label.textContent = name;
+
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "metadata";
+    audio.src = url;
+
+    player.append(label, audio);
+    content.appendChild(player);
+}
+
+function showVideo(name, url) {
+    const content = prepareViewer("VIDEO: " + name);
+
+    const player = document.createElement("div");
+    player.className = "media-player";
+
+    const label = document.createElement("div");
+    label.className = "media-label";
+    label.textContent = name;
+
+    const video = document.createElement("video");
+    video.controls = true;
+    video.preload = "metadata";
+    video.playsInline = true;
+    video.src = url;
+
+    player.append(label, video);
+    content.appendChild(player);
+}
+
 function closeViewer() {
     const content = document.getElementById("viewer-content");
-    const img = content.querySelector("img");
 
-    if (img && img.src.startsWith("blob:")) {
-        URL.revokeObjectURL(img.src);
+    content.querySelectorAll("audio, video").forEach(media => {
+        media.pause();
+        media.removeAttribute("src");
+        media.load();
+    });
+
+    if (activeObjectURL) {
+        URL.revokeObjectURL(activeObjectURL);
+        activeObjectURL = null;
     }
 
+    content.replaceChildren();
     document.getElementById("viewer").classList.add("hidden");
 }
 
@@ -1163,7 +1197,6 @@ function closeViewer() {
 
 function execute(raw) {
     const command = raw.trim();
-
     if (!command) return;
 
     print(currentLocation() + "> " + command, "dim");
@@ -1173,10 +1206,12 @@ function execute(raw) {
     if (lower === "help") {
         print("AVAILABLE COMMANDS:");
         print("DIR       - LIST DIRECTORY CONTENTS");
+        print("CD [DIR]  - CHANGE DIRECTORY");
         print("CD ..     - GO TO PARENT DIRECTORY");
         print("DRIVE     - DISPLAY AVAILABLE DRIVES");
         print("CLS       - CLEAR TERMINAL");
         print("MOUSE     - OPEN FILE MANAGER");
+        print("SETUP     - OPEN SYSTEM SETTINGS");
         print("TERMINAL  - RETURN TO TERMINAL");
         print("HELP      - DISPLAY THIS MESSAGE");
         print("");
@@ -1195,9 +1230,23 @@ function execute(raw) {
         return;
     }
 
+    if (lower === "mouse") {
+        switchToManager();
+        return;
+    }
+
+    if (lower === "terminal") {
+        switchToTerminal();
+        return;
+    }
+
+    if (lower === "setup") {
+        openSetup();
+        return;
+    }
+
     if (lower === "dir" || lower === "ls") {
         const dir = getDirectory();
-
         if (!dir) return;
 
         print("DIRECTORY OF " + currentLocation());
@@ -1223,18 +1272,50 @@ function execute(raw) {
         return;
     }
 
-    if (lower === "mouse") {
-        switchToManager();
+    /* Directory navigation */
+    if (lower.startsWith("cd ")) {
+        const target = command.slice(3).trim();
+        const parts = target.replaceAll("/", "\\")
+                            .split("\\")
+                            .filter(Boolean);
+
+        let path = [...currentPath];
+
+        if (parts[0]?.toLowerCase() === "a:") {
+            path = [];
+            parts.shift();
+        }
+
+        for (const part of parts) {
+            if (part === "..") {
+                path.pop();
+                continue;
+            }
+
+            const parent = getDirectory(path);
+            const key = parent && Object.keys(parent.children).find(
+                k => k.toLowerCase() === part.toLowerCase()
+            );
+
+            if (!key || parent.children[key].type !== "dir") {
+                print("DIRECTORY NOT FOUND.", "error");
+                return;
+            }
+
+            path.push(key);
+        }
+
+        currentPath = path;
+        updatePrompt();
+        print("DIRECTORY CHANGED.");
         return;
     }
 
-    if (lower === "terminal") {
-        switchToTerminal();
-        return;
-    }
+    /* File or directory path */
+    const parts = command.replaceAll("/", "\\")
+                         .split("\\")
+                         .filter(Boolean);
 
-    // Support paths such as databases/players
-    const parts = command.replaceAll("/", "\\").split("\\").filter(Boolean);
     let node = null;
     let path = [...currentPath];
 
@@ -1252,6 +1333,7 @@ function execute(raw) {
         }
 
         const parent = getDirectory(path);
+
         if (!parent) {
             failed = true;
             break;
@@ -1292,7 +1374,6 @@ function execute(raw) {
 ===================================== */
 
 input.addEventListener("keydown", event => {
-
     if (event.key === "Enter") {
         const value = input.value;
         input.value = "";
@@ -1303,6 +1384,7 @@ input.addEventListener("keydown", event => {
         }
 
         tabMatches = [];
+        tabIndex = 0;
         execute(value);
         return;
     }
@@ -1350,9 +1432,13 @@ function autocomplete() {
 
     if (!tabMatches.length || tabIndex === 0) {
         const dir = getDirectory();
+
+        if (!dir) return;
+
         tabMatches = Object.keys(dir.children).filter(
             name => name.toLowerCase().startsWith(prefix)
         );
+
         tabIndex = 0;
     }
 
@@ -1411,9 +1497,13 @@ function refreshManager() {
         const item = document.createElement("div");
         item.className = "file";
 
-        const kind = node.type === "dir" ? "[DIRECTORY]" :
-                     node.type === "locked" ? "[LOCKED]" :
-                     node.type === "image" ? "[IMAGE]" : "[TEXT FILE]";
+        let kind = "[TEXT FILE]";
+
+        if (node.type === "dir") kind = "[DIRECTORY]";
+        if (node.type === "locked") kind = "[LOCKED]";
+        if (node.type === "image") kind = "[IMAGE]";
+        if (node.type === "audio") kind = "[AUDIO]";
+        if (node.type === "video") kind = "[VIDEO]";
 
         const label = document.createElement("div");
         label.textContent = kind;
@@ -1438,7 +1528,9 @@ function refreshManager() {
         });
 
         item.addEventListener("dblclick", () => {
-            openFile(name, node).then(refreshManager);
+            openFile(name, node).then(() => {
+                if (node.type === "dir") refreshManager();
+            });
         });
 
         area.appendChild(item);
@@ -1467,7 +1559,7 @@ function goBack() {
 
 function showMenu(menu) {
     if (menu === "Help") {
-        alert("DATAARCHIVE FILE MANAGER\nVERSION 1.0");
+        alert("DATAARCHIVE FILE MANAGER\nVERSION 1.2");
     } else if (menu === "View") {
         refreshManager();
     } else if (menu === "File") {
@@ -1482,10 +1574,11 @@ function showMenu(menu) {
    STARTUP
 ===================================== */
 
-
 async function startup() {
+    loadSettings();
+
     print("DATAARCHIVE SYSTEM");
-    print("VERSION 1.0");
+    print("VERSION 1.2");
     print("");
     print("CONNECTING TO ARCHIVE...");
     print("");
@@ -1500,6 +1593,7 @@ async function startup() {
         print("");
         print("ARCHIVE INDEX LOADED.");
         print("TYPE 'HELP' TO BEGIN.");
+
     } catch (error) {
         document.getElementById("connection").textContent = "ERROR";
 
@@ -1510,10 +1604,8 @@ async function startup() {
 }
 
 startup();
-
 updatePrompt();
-
 </script>
+
 </body>
-  </html>
-  
+</html>
