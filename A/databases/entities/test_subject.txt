@@ -1,0 +1,4 @@
+TEST SUBJECTS ARE TEMPORALY EXISTANT. TALKING TO THEM IS UNNECESSARY. THEY ONLY RECEIVE ORDERS FROM A PROFESSIONAL ENTITIES DATA MANAGER.
+
+These entity are called 'test subject'; they listen to order and execute them before immediatly forgetting it. Test subjects don't have an assigned skin character. They wear only the Steve or the Alex character. They are accurate only when fully controlable and have a modified UUID.
+Test subject are the rest of data: they are made of players's data. Some are made entirely from one player, but it happen rarely because sometimes they get an username.
