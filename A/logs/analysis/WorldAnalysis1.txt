@@ -1,0 +1,7 @@
+WORLD's name: ARG
+IP: Not written for the moment.
+
+This report is written only to report these following information about the server worldedit:
+- World border are found modified, no presence of farlands.
+- Near the spawn point of the world, there's world chunk error all around, noticeable by seeing walls of rock or/and dirt from the world itself.
+- Chunk corruption, as mentionned in the Exploration Log n°2.
