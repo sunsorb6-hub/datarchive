@@ -1,0 +1,6 @@
+LAYER 1 - THE VOID THAT ISN'T EMPTY
+
+Layer 1 is located after the bedrock layer. It's representated by a void that goes 300 blocks under the world before letting place to a land made of rocks. The land looks like an uniform formation of big cube, some taller than the other.
+This layer have a security system: every entities who tries to travel the layer from the void take damages until dying and respawning in-game.
+
+Also, Layer 1 is known to be the final obstacle between the overworld and the layers under the bedrock. At this day, no test_subject or employee have travelled this layer without dying. So, they used commands to reproduce the overworld under the bedrock, which will be representated has the Layer 2, where test_subject and employees can makes visible copy of them in the real overworld.
